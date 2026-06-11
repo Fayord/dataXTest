@@ -15,6 +15,9 @@ groups:
       # Baseline rejection rate is ~15% (REJECTION_MIX_RATIO=0.15 in traffic-generator).
       # Threshold of 16% is just above baseline to catch real anomalies quickly
       # in this environment while still filtering momentary noise.
+      # NOTE: The 16% threshold is set strictly to observe how the system reacts in
+      # this mock setup. For a real production environment, this should be set to
+      # 20-25% to trigger major incidents without alert fatigue.
       # Uses a 5m window to smooth out short bursts.
       - alert: HighRejectionRate
         expr: |

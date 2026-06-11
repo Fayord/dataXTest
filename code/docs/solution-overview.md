@@ -24,7 +24,8 @@ Shows concurrent request count at any point in time. Useful for detecting connec
 ### Task 2: Alerting Strategy
 
 **Decision: HighRejectionRate threshold at 16%.**
-The traffic generator runs at `REJECTION_MIX_RATIO=0.15` (15% baseline). Setting the alert at 16% keeps it just above baseline so it can realistically fire when rejection rate drifts above normal — making it useful for demo and production alike. The 5-minute `for:` duration filters momentary noise.
+The traffic generator runs at `REJECTION_MIX_RATIO=0.15` (15% baseline). Setting the alert at 16% keeps it just above baseline so it can realistically fire when rejection rate drifts above normal — making it useful for demo and observation purposes. 
+*(Note: I set this to 16% strictly to see how the system reacts in this mock setup. In a real production environment, this should be set to 20-25% to trigger major incidents without alert fatigue).*
 
 **Decision: 5-minute `for:` duration on HighRejectionRate.**
 Short bursts of rejections happen naturally (a few adversarial requests in a row). Requiring the condition to persist for 5 minutes filters noise while still catching sustained issues within a reasonable window.
