@@ -13,7 +13,7 @@ groups:
 
       # --- Rejection rate alerts ---
       # Baseline rejection rate is ~15% (REJECTION_MIX_RATIO=0.15 in traffic-generator).
-      # Threshold of 17% is just above baseline to catch real anomalies quickly
+      # Threshold of 16% is just above baseline to catch real anomalies quickly
       # in this environment while still filtering momentary noise.
       # Uses a 5m window to smooth out short bursts.
       - alert: HighRejectionRate
@@ -22,14 +22,14 @@ groups:
             sum(rate(agent_rejections_total[5m]))
             /
             sum(rate(agent_requests_total{route="/ask"}[5m]))
-          ) > 0.17
+          ) > 0.16
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "High rejection rate: {{ $value | humanizePercentage }}"
           description: >-
-            Rejection rate has been above 17% for 5 minutes
+            Rejection rate has been above 16% for 5 minutes
             (current: {{ $value | humanizePercentage }}).
             Baseline is ~15%. Check if rejection patterns were changed
             or if legitimate traffic is being incorrectly rejected.

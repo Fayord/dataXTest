@@ -45,7 +45,7 @@
 │  │                                                                           │  │
 │  │  Alert Rules:                                                             │  │
 │  │    ⚠  AgentAPIDown          up{job="agent-api"} == 0        (1m, crit)   │  │
-│  │    ⚠  HighRejectionRate     rejection_rate > 17%            (5m, warn)   │  │
+│  │    ⚠  HighRejectionRate     rejection_rate > 16%            (5m, warn)   │  │
 │  │    ⚠  RejectionRateSpike    5m_rate > 2× 30m_baseline      (3m, warn)   │  │
 │  │    ⚠  HighLatency           p95 > 1s                       (5m, warn)   │  │
 │  │    ⚠  PromptInjectionSpike  injection_rate > 0.5/s          (3m, warn)   │  │
