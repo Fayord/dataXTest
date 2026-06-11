@@ -23,8 +23,8 @@ Shows concurrent request count at any point in time. Useful for detecting connec
 
 ### Task 2: Alerting Strategy
 
-**Decision: HighRejectionRate threshold at 25%, not lower.**
-The traffic generator runs at `REJECTION_MIX_RATIO=0.15` (15% baseline). Setting the alert at 25% gives 10pp of headroom above normal variance while still catching meaningful problems. A tighter threshold (e.g., 18%) would cause alert fatigue from normal fluctuations.
+**Decision: HighRejectionRate threshold at 17%.**
+The traffic generator runs at `REJECTION_MIX_RATIO=0.15` (15% baseline). Setting the alert at 17% keeps it just above baseline so it can realistically fire when rejection rate drifts above normal — making it useful for demo and production alike. The 5-minute `for:` duration filters momentary noise.
 
 **Decision: 5-minute `for:` duration on HighRejectionRate.**
 Short bursts of rejections happen naturally (a few adversarial requests in a row). Requiring the condition to persist for 5 minutes filters noise while still catching sustained issues within a reasonable window.
@@ -95,7 +95,7 @@ Not every rejection spike needs a rollback. If adversarial traffic is being corr
 | **Metrics** | `agent_request_errors_total` | Separates errors (bugs) from rejections (intended behavior) |
 | **Metrics** | `agent_message_length_chars` | Histogram for input size anomaly detection |
 | **Metrics** | `agent_in_flight_requests` | Gauge for real-time concurrency visibility |
-| **Alerts** | `HighRejectionRate` | >25% for 5m (10pp above 15% baseline) |
+| **Alerts** | `HighRejectionRate` | >17% for 5m (just above 15% baseline) |
 | **Alerts** | `RejectionRateSpike` | 2× the 30m baseline — adapts to traffic changes |
 | **Alerts** | `HighLatency` | p95 > 1s for 5m |
 | **Alerts** | `PromptInjectionSpike` | >0.5 req/s for 3m — detects automated attacks |

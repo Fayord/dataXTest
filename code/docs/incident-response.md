@@ -16,9 +16,9 @@ curl -s http://localhost:8080/healthz | jq .
 
 | Rejection Rate | Severity | Action |
 |---|---|---|
-| 15-25% | Low | Monitor, likely normal variance |
-| 25-50% | Medium | Investigate, may affect legitimate users |
-| >50% | High | Immediate investigation, likely config change or attack |
+| 15-17% | Low | Monitor, likely normal variance |
+| 17-30% | Medium | Investigate, may affect legitimate users |
+| >30% | High | Immediate investigation, likely config change or attack |
 
 ## 2. Investigation
 
