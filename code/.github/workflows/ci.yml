@@ -1,11 +1,12 @@
-# TODO: Implement CI/CD pipeline
-# 
-# This workflow should ensure code quality before deployment.
-# Consider: What checks are necessary? How do you gate deployments?
-#           How can someone verify a deployment occurred?
+# CI/CD Pipeline for Agent API
 #
-# The eval-runner service exists for a reason. The deployment/ directory
-# contains a manifest that may be useful.
+# Design decisions:
+# - Build + eval in a single job using docker compose (matches local workflow)
+# - Eval-runner acts as the quality gate: it exits non-zero if thresholds fail,
+#   which blocks the pipeline and prevents broken builds from merging
+# - Deploy job only runs on main (not PRs) and updates deployment/manifest.yml
+#   with the commit SHA, making deployments traceable to specific commits
+# - Eval results uploaded as artifacts for post-mortem debugging
 
 name: CI/CD Pipeline
 
@@ -16,8 +17,85 @@ on:
     branches: [main]
 
 jobs:
-  # TODO: Design and implement your pipeline
-  placeholder:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - run: exit 1
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: docker compose build
+        working-directory: ./code
+
+      - name: Start stack
+        run: docker compose up -d
+        working-directory: ./code
+
+      - name: Wait for API health
+        run: |
+          echo "Waiting for agent-api to be healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/healthz > /dev/null 2>&1; then
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+          echo "API failed to become healthy"
+          docker compose logs agent-api
+          exit 1
+        working-directory: ./code
+
+      # The eval-runner is the quality gate: it tests golden (should-accept)
+      # and adversarial (should-reject) datasets against the running API.
+      # Exit code 1 = gate failure → pipeline fails → PR cannot merge.
+      - name: Run eval suite
+        run: docker compose run --rm eval-runner
+        working-directory: ./code
+
+      - name: Upload eval results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: code/eval-results/
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down
+        working-directory: ./code
+
+  # Deploy job: only runs on push to main after tests pass.
+  # Updates manifest with commit SHA for deployment traceability.
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment manifest
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          # Update image_tag to commit SHA
+          sed -i "s/image_tag: .*/image_tag: \"${{ github.sha }}\"/" code/deployment/manifest.yml
+
+          # Append to deployment history
+          sed -i "/# | (will be populated/i\\# | ${TIMESTAMP} | ${{ github.sha }} | GitHub Actions |" code/deployment/manifest.yml
+
+      - name: Commit manifest update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add code/deployment/manifest.yml
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "deploy: update manifest to ${{ github.sha }}"
+          git push
